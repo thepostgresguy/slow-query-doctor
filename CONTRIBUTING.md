@@ -39,6 +39,22 @@ We welcome contributions of all kinds, including bug reports, feature requests, 
 - Use the [Conventional Commits](https://www.conventionalcommits.org/) style when possible
 - Example: `fix(parser): handle multiline queries in log parser`
 
+### Commit message guidelines
+
+- Structure: `type(scope): short description` (e.g. `feat(parser): add EXPLAIN support`)
+- Allowed types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `ci`
+- Include a scope when relevant (e.g. `parser`, `llm`, `helm`)
+- Use imperative, present tense: `fix`, not `fixed` or `fixes`
+- For release bumps: `chore(release): bump VERSION to vX.Y.Z`
+
+Our CI enforces commit message format; if commits fail linting, update them with interactive rebase:
+
+```bash
+git rebase -i HEAD~5
+# edit commit messages
+git push --force-with-lease
+```
+
 ## Pull Request Review Process
 
 - All PRs are reviewed by maintainers

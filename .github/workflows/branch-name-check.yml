@@ -1,0 +1,17 @@
+name: Branch Name Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          if ! [[ "$BRANCH" =~ ^(feature\/[a-zA-Z0-9\-]+|bugfix\/[0-9]+-[a-zA-Z0-9\-]+|release\/v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z]+)?|hotfix\/v[0-9]+\.[0-9]+\.[0-9]+-[a-zA-Z0-9\-]+)$ ]]; then
+            echo "::error file=.github/workflows/branch-name-check.yml::Branch name '$BRANCH' does not match naming convention!"
+            exit 1
+          fi

@@ -1,0 +1,62 @@
+name: Commitlint
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+      - 'feature/**'
+
+jobs:
+  commitlint:
+    name: Commit message lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # need full history to lint commits in push/PR
+          fetch-depth: 0
+
+      - name: Run commitlint
+        uses: wagoid/commitlint-github-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect commitlint output and comment (PRs only)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const execSync = require('child_process').execSync;
+            try {
+              // run commitlint for the PR range
+              const sha = process.env.GITHUB_SHA;
+              const head = sha;
+              const base = process.env.GITHUB_BASE_REF || 'main';
+              // Use commitlint CLI via npx to check commits between base..head
+              const cmd = `npx --yes @commitlint/cli --from=${base} --to=${head}`;
+              let out = '';
+              try {
+                out = execSync(cmd, { encoding: 'utf8' });
+              } catch (err) {
+                // commitlint exits non-zero on failures; capture stdout/stderr
+                out = (err.stdout || '') + '\n' + (err.stderr || '');
+              }
+              if (out && out.trim().length > 0) {
+                const prNumber = context.payload.pull_request.number;
+                const body = `Commit message lint results for this PR:\n\n\`\`\`\n${out}\n\`\`\`\n\nPlease update offending commit messages to match Conventional Commits. Examples:\n- feat(scope): add new analyzer\n- fix(parser): handle nested queries\n- chore(release): bump VERSION to v0.1.7`;
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body
+                });
+              }
+            } catch (e) {
+              console.log('Error while running commitlint comment step:', e);
+            }
